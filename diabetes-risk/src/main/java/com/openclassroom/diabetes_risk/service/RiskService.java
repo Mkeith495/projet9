@@ -5,106 +5,77 @@ import com.openclassroom.diabetes_risk.model.Patient;
 import com.openclassroom.diabetes_risk.model.RiskReport;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
 public class RiskService {
 
+    @Value("${patient.service.url}")
     private String patientServiceUrl;
+
+    @Value("${notes.service.url}")
     private String notesServiceUrl;
-    private WebClient webClient;
 
-    public RiskService() {
-        this.webClient = WebClient.create();
+    private final RestTemplate restTemplate;
+
+    public RiskService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
-    public RiskService(@Value("${patient.service.url}") String patientServiceUrl,
-                       @Value("${notes.service.url}") String notesServiceUrl) {
-        this.patientServiceUrl = patientServiceUrl;
-        this.notesServiceUrl = notesServiceUrl;
-        this.webClient = WebClient.create();
-    }
+    public RiskReport assessRisk(Integer patientId) {
+        // 1. Récupération du patient via la Gateway
+        Patient patient = restTemplate.getForObject(patientServiceUrl + "/" + patientId, Patient.class);
 
-    // Constructeur pour tests
-    public RiskService(WebClient webClient, String patientServiceUrl, String notesServiceUrl) {
-        this.webClient = webClient;
-        this.patientServiceUrl = patientServiceUrl;
-        this.notesServiceUrl = notesServiceUrl;
-    }
+        // 2. Récupération des notes via la Gateway
+        Note[] notesArr = restTemplate.getForObject(notesServiceUrl + "/" + patientId, Note[].class);
+        List<Note> notes = (notesArr != null) ? Arrays.asList(notesArr) : List.of();
 
-    public RiskReport assessRisk(String patientId) {  
-        Patient patient;
-        List<Note> notes;
-
-        try {
-            patient = webClient.get()
-                    .uri(patientServiceUrl + "/" + patientId)
-                    .retrieve()
-                    .bodyToMono(Patient.class)
-                    .block();
-
-            notes = webClient.get()
-                    .uri(notesServiceUrl + "/" + patientId)
-                    .retrieve()
-                    .bodyToFlux(Note.class)
-                    .collectList()
-                    .block();
-
-        } catch (WebClientResponseException e) {
-            return new RiskReport(patientId, "Unknown", 0, "Unknown", "Unknown");
-        } catch (Exception e) {
-            return new RiskReport(patientId, "Unknown", 0, "Unknown", "Unknown");
-        }
-
-        if (patient == null || notes == null) {
-            return new RiskReport(patientId, "Unknown", 0, "Unknown", "Unknown");
-        }
-
-        int triggerCount = countTriggers(notes);
-
-        int age = Period.between(LocalDate.parse(patient.getDateNaissance()), LocalDate.now()).getYears();
-
-        String risk = evaluateRisk(patient.getGenre(), age, triggerCount);
-
-        String fullName = patient.getPrenom() + " " + patient.getNom();
-        return new RiskReport(patientId, fullName, age, patient.getGenre(), risk);
-    }
-
-    private int countTriggers(List<Note> notes) {
+        // 3. Détection des déclencheurs
         List<String> triggers = List.of(
                 "hémoglobine a1c", "microalbumine", "taille", "poids",
                 "fumeur", "fumeuse", "anormal", "cholestérol",
                 "vertiges", "rechute", "réaction", "anticorps"
         );
 
-        int count = 0;
+        int triggerCount = 0;
         for (Note note : notes) {
             String content = note.getContent().toLowerCase();
             for (String trigger : triggers) {
                 if (content.contains(trigger.toLowerCase())) {
-                    count++;
+                    triggerCount++;
                 }
             }
         }
-        return count;
+
+        // 4. Calcul de l'âge
+        int age = 0;
+        if (patient != null && patient.getDateNaissance() != null) {
+            age = Period.between(LocalDate.parse(patient.getDateNaissance()), LocalDate.now()).getYears();
+        }
+
+        // 5. Évaluation du risque
+        String risk = (patient != null) ? evaluateRisk(patient.getGenre(), age, triggerCount) : "Unknown";
+
+        String fullName = (patient != null) ? patient.getPrenom() + " " + patient.getNom() : "Unknown";
+        return new RiskReport(patientId, fullName, age, (patient != null ? patient.getGenre() : "N/A"), risk);
     }
 
     private String evaluateRisk(String sex, int age, int triggers) {
-        sex = sex.toUpperCase();
+        sex = (sex != null) ? sex.toUpperCase() : "M";
 
         if (triggers == 0) return "None";
         if (triggers >= 2 && triggers <= 5 && age > 30) return "Borderline";
         if ((sex.equals("M") && age < 30 && triggers >= 3 && triggers <= 5)
                 || (sex.equals("F") && age < 30 && triggers >= 4 && triggers <= 6)
-                || (age > 30 && triggers >= 6 && triggers <= 7)) return "InDanger";
+                || (age > 30 && triggers >= 6 && triggers <= 7)) return "In Danger";
         if ((sex.equals("M") && age < 30 && triggers >= 5)
                 || (sex.equals("F") && age < 30 && triggers >= 7)
-                || (age > 30 && triggers >= 8)) return "EarlyOnset";
+                || (age > 30 && triggers >= 8)) return "Early Onset";
 
         return "None";
     }

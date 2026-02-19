@@ -22,7 +22,7 @@ public class PatientService {
 
     public List<Patient> getAllPatients() {
         Patient[] patients = restTemplate.getForObject(gatewayUrl + "/patients", Patient[].class);
-        return Arrays.asList(patients);
+        return patients != null ? Arrays.asList(patients) : List.of();
     }
 
     public Patient getPatientById(Long id) {
@@ -40,4 +40,5 @@ public class PatientService {
     public void deletePatient(Long id) {
         restTemplate.delete(gatewayUrl + "/patients/" + id);
     }
+
 }

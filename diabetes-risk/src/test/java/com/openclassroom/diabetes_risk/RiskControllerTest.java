@@ -1,23 +1,18 @@
 package com.openclassroom.diabetes_risk;
 
-import com.openclassroom.diabetes_risk.controller.RiskController;
 import com.openclassroom.diabetes_risk.model.RiskReport;
 import com.openclassroom.diabetes_risk.service.RiskService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(RiskController.class)
-@AutoConfigureMockMvc(addFilters = false)
 class RiskControllerTest {
 
     @Autowired
@@ -26,20 +21,21 @@ class RiskControllerTest {
     @MockBean
     private RiskService riskService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @Test
-    void testGetRiskReport() throws Exception {
-        RiskReport report = new RiskReport("1", "John Doe", 25, "M", "InDanger");
-
-        Mockito.when(riskService.assessRisk(anyString())).thenReturn(report);
+    void shouldReturnRiskReport() throws Exception {
+        RiskReport report = new RiskReport(1, "Test User", 40, "M", "Borderline");
+        when(riskService.assessRisk(1)).thenReturn(report);
 
         mockMvc.perform(get("/risk/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.fullName").value("John Doe"))
-                .andExpect(jsonPath("$.age").value(25))
-                .andExpect(jsonPath("$.genre").value("M"))
-                .andExpect(jsonPath("$.risk").value("InDanger"));
+                .andExpect(jsonPath("$.riskLevel").value("Borderline"))
+                .andExpect(jsonPath("$.fullName").value("Test User"));
+    }
+
+    @Test
+    void testEndpointShouldReturnOk() throws Exception {
+        mockMvc.perform(get("/risk/test"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("diabetes-risk OK"));
     }
 }

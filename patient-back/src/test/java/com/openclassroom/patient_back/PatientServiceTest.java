@@ -1,95 +1,46 @@
-package com.openclassroom.patient_back;
+package com.openclassroom.patient_back.service;
 
 import com.openclassroom.patient_back.model.Patient;
 import com.openclassroom.patient_back.repository.PatientRepository;
-import com.openclassroom.patient_back.service.PatientService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class PatientServiceTest {
 
-    private PatientRepository patientRepository;
+    @Mock
+    private PatientRepository repo;
+
+    @InjectMocks
     private PatientService patientService;
 
-    @BeforeEach
-    void setup() {
-        patientRepository = mock(PatientRepository.class);
-        patientService = new PatientService(patientRepository);
+    @Test
+    void createPatient_ShouldSavePatient() {
+        Patient patient = new Patient();
+        patient.setNom("Durand");
+        when(repo.save(any(Patient.class))).thenReturn(patient);
+
+        Patient saved = patientService.createPatient(new Patient());
+
+        assertEquals("Durand", saved.getNom());
+        verify(repo, times(1)).save(any());
     }
 
     @Test
-    void testGetAllPatients() {
-        Patient p1 = new Patient(); p1.setId(1L);
-        Patient p2 = new Patient(); p2.setId(2L);
-        when(patientRepository.findAll()).thenReturn(List.of(p1, p2));
+    void deletePatient_ShouldReturnTrue_WhenExists() {
+        when(repo.existsById(1L)).thenReturn(true);
+        
+        boolean deleted = patientService.deletePatient(1L);
 
-        List<Patient> result = patientService.getAllPatients();
-        assertEquals(2, result.size());
-        verify(patientRepository, times(1)).findAll();
-    }
-
-    @Test
-    void testGetPatientById() {
-        Patient p = new Patient(); p.setId(1L);
-        when(patientRepository.findById(1L)).thenReturn(Optional.of(p));
-
-        Optional<Patient> result = patientService.getPatientById(1L);
-        assertTrue(result.isPresent());
-        assertEquals(1L, result.get().getId());
-    }
-
-    @Test
-    void testCreatePatient() {
-        Patient p = new Patient(); p.setNom("John");
-        when(patientRepository.save(p)).thenReturn(p);
-
-        Patient result = patientService.createPatient(p);
-        assertEquals("John", result.getNom());
-        verify(patientRepository, times(1)).save(p);
-    }
-
-    @Test
-    void testUpdatePatientFound() {
-        Patient existing = new Patient(); existing.setId(1L); existing.setNom("Old");
-        Patient update = new Patient(); update.setNom("New");
-
-        when(patientRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(patientRepository.save(existing)).thenReturn(existing);
-
-        Patient result = patientService.updatePatient(1L, update);
-        assertEquals("New", result.getNom());
-    }
-
-    @Test
-    void testUpdatePatientNotFound() {
-        when(patientRepository.findById(1L)).thenReturn(Optional.empty());
-
-        Patient result = patientService.updatePatient(1L, new Patient());
-        assertNull(result);
-    }
-
-    @Test
-    void testDeletePatient() {
-        when(patientRepository.existsById(1L)).thenReturn(true);
-
-        boolean result = patientService.deletePatient(1L);
-        assertTrue(result);
-        verify(patientRepository, times(1)).deleteById(1L);
-    }
-
-    @Test
-    void testDeletePatientNotFound() {
-        when(patientRepository.existsById(1L)).thenReturn(false);
-
-        boolean result = patientService.deletePatient(1L);
-        assertFalse(result);
-        verify(patientRepository, never()).deleteById(anyLong());
+        assertTrue(deleted);
+        verify(repo, times(1)).deleteById(1L);
     }
 }

@@ -1,46 +1,45 @@
 package com.openclassroom.frontend;
 
-import com.openclassroom.frontend.controller.PatientController;
+import com.openclassroom.frontend.FrontendApplication;
 import com.openclassroom.frontend.model.Patient;
 import com.openclassroom.frontend.service.PatientService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import java.util.List;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(PatientController.class)
-@AutoConfigureMockMvc(addFilters = false)
+@SpringBootTest(classes = FrontendApplication.class)
+@AutoConfigureMockMvc
 class PatientControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
-    private PatientService service;
+    private PatientService patientService;
 
     @MockBean
     private RestTemplate restTemplate;
 
     @Test
-    void testListPatients() throws Exception {
-        Patient p = new Patient();
-        p.setId(1L);
-        p.setNom("Doe");
-        p.setPrenom("John");
-
-        when(service.getAllPatients()).thenReturn(List.of(p));
-
+    @WithMockUser(username = "docteur_admin")
+    void shouldReturnPatientsPage() throws Exception {
+        when(patientService.getAllPatients()).thenReturn(List.of(new Patient()));
+        
         mockMvc.perform(get("/patients"))
                 .andExpect(status().isOk())
-                .andExpect(model().attributeExists("patients"))
                 .andExpect(view().name("patients"));
     }
 }

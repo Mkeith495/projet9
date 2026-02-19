@@ -2,11 +2,9 @@ package com.openclassroom.patient_back.controller;
 
 import com.openclassroom.patient_back.model.Patient;
 import com.openclassroom.patient_back.service.PatientService;
-import com.openclassroom.patient_back.dto.PatientDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -30,17 +28,16 @@ public class PatientController {
     }
 
     @PostMapping
-    public ResponseEntity<Patient> createPatient(@RequestBody @Valid PatientDTO patientDTO) {
-        Patient patient = mapDtoToPatient(patientDTO);
-        Patient saved = service.createPatient(patient);
-        return ResponseEntity.ok(saved);
+    public Patient createPatient(@RequestBody Patient patient) {
+        return service.createPatient(patient);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Patient> updatePatient(@PathVariable Long id, @RequestBody @Valid PatientDTO patientDTO) {
-        Patient patient = mapDtoToPatient(patientDTO);
+    public ResponseEntity<Patient> updatePatient(@PathVariable Long id, @RequestBody Patient patient) {
         Patient updated = service.updatePatient(id, patient);
-        if (updated == null) return ResponseEntity.notFound().build();
+        if (updated == null) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(updated);
     }
 
@@ -50,16 +47,5 @@ public class PatientController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
-    }
-    // Méthode utilitaire pour mapper notre DTO
-    private Patient mapDtoToPatient(PatientDTO dto) {
-        Patient patient = new Patient();
-        patient.setNom(dto.getNom());
-        patient.setPrenom(dto.getPrenom());
-        patient.setGenre(dto.getGenre());
-        patient.setDateNaissance(dto.getDateNaissance());
-        patient.setAdresse(dto.getAdresse());
-        patient.setTelephone(dto.getTelephone());
-        return patient;
     }
 }

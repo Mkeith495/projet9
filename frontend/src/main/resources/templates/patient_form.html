@@ -54,9 +54,9 @@
 <body>
 <h2 th:text="${patient.id != null} ? 'Modifier un patient' : 'Ajouter un patient'"></h2>
 
-<form th:action="${patient.id != null} ? @{/patients/update/{id}(id=${patient.id})} : @{/patients}" 
+<form th:action="${patient.id != null} ? @{'/frontend/patients/update/' + ${patient.id}} : @{/frontend/patients}" 
       th:object="${patient}" method="post">
-    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
     <label>Nom:</label>
     <input type="text" th:field="*{nom}" required>
 
@@ -78,7 +78,6 @@
     <button type="submit">Enregistrer</button>
 </form>
 
-<a th:href="@{/patients}">Retour</a>
-
+<a href="/frontend/patients">Retour</a>
 </body>
 </html>

@@ -1,2 +1,2 @@
-com\openclassroom\gateway\security\SecurityConfig.class
+com\openclassroom\gateway\config\SecurityConfig.class
 com\openclassroom\gateway\GatewayApplication.class

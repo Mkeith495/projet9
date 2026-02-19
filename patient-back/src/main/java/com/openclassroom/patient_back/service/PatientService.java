@@ -14,11 +14,6 @@ public class PatientService {
     @Autowired
     private PatientRepository repo;
 
-    @Autowired
-    public PatientService(PatientRepository repo) { 
-        this.repo = repo;
-    }
-
     public List<Patient> getAllPatients() {
         return repo.findAll();
     }

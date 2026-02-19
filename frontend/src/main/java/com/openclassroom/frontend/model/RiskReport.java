@@ -1,13 +1,13 @@
 package com.openclassroom.frontend.model;
 
 public class RiskReport {
-    private String patientId;
+    private Integer patientId;
     private String fullName;
     private int age;
     private String genre;
     private String risk;
 
-    public RiskReport(String patientId, String fullName, int age, String genre, String risk) {
+    public RiskReport(Integer patientId, String fullName, int age, String genre, String risk) {
         this.patientId = patientId;
         this.fullName = fullName;
         this.age = age;
@@ -15,10 +15,10 @@ public class RiskReport {
         this.risk = risk;
     }
 
-    public String getPatientId() { 
+    public Integer getPatientId() { 
         return patientId; 
     }
-    public void setPatientId(String patientId) { 
+    public void setPatientId(Integer patientId) { 
         this.patientId = patientId; 
     }
     public String getFullName() { 

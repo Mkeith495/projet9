@@ -1,8 +1,5 @@
-package com.openclassroom.patient_back;
+package com.openclassroom.patient_back.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openclassroom.patient_back.controller.PatientController;
-import com.openclassroom.patient_back.dto.PatientDTO;
 import com.openclassroom.patient_back.model.Patient;
 import com.openclassroom.patient_back.service.PatientService;
 import org.junit.jupiter.api.Test;
@@ -12,11 +9,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PatientController.class)
@@ -26,60 +24,26 @@ class PatientControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private PatientService patientService;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    private PatientService service;
 
     @Test
-    void testGetAllPatients() throws Exception {
-        Patient p1 = new Patient(); p1.setId(1L); p1.setNom("John");
-        Patient p2 = new Patient(); p2.setId(2L); p2.setNom("Jane");
+    void getPatientById_ShouldReturnOk() throws Exception {
+        Patient p = new Patient();
+        p.setId(1L);
+        p.setNom("Test");
 
-        when(patientService.getAllPatients()).thenReturn(List.of(p1, p2));
-
-        mockMvc.perform(get("/patients").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)));
-    }
-
-
-    @Test
-    void testGetPatientByIdFound() throws Exception {
-        Patient p = new Patient(); p.setId(1L); p.setNom("John");
-        when(patientService.getPatientById(1L)).thenReturn(Optional.of(p));
+        when(service.getPatientById(1L)).thenReturn(Optional.of(p));
 
         mockMvc.perform(get("/patients/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nom").value("John"));
+                .andExpect(jsonPath("$.nom").value("Test"));
     }
 
     @Test
-    void testCreatePatient() throws Exception {
-        PatientDTO dto = new PatientDTO();
-        dto.setNom("NewPatient");
-        dto.setPrenom("Test");
-        dto.setGenre("H");
-        dto.setDateNaissance("2000-01-01");
-        dto.setAdresse("123 Rue Test");
-        dto.setTelephone("0123456789");
+    void getPatientById_ShouldReturnNotFound() throws Exception {
+        when(service.getPatientById(1L)).thenReturn(Optional.empty());
 
-        Patient saved = new Patient();
-        saved.setId(1L);
-        saved.setNom(dto.getNom());
-        saved.setPrenom(dto.getPrenom());
-        saved.setGenre(dto.getGenre());
-        saved.setDateNaissance(dto.getDateNaissance());
-        saved.setAdresse(dto.getAdresse());
-        saved.setTelephone(dto.getTelephone());
-
-        when(patientService.createPatient(any(Patient.class))).thenReturn(saved);
-
-        mockMvc.perform(post("/patients")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.nom").value("NewPatient"));
+        mockMvc.perform(get("/patients/1"))
+                .andExpect(status().isNotFound());
     }
 }

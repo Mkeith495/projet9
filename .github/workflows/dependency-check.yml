@@ -1,0 +1,41 @@
+name: OWASP Dependency-Check
+
+# Déclenche le workflow sur push et pull request vers main
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Étape 1 : cloner le repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Étape 2 : installer Java (nécessaire pour Dependency-Check)
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Étape 3 : exécuter OWASP Dependency-Check
+      - name: Run OWASP Dependency-Check
+        uses: OWASP/dependency-check-action@v2
+        with:
+          project: 'projet9'            # Nom affiché pour le projet
+          scan: '.'                        # Scanner le repo entier
+          format: 'HTML'                   # Générer le rapport en HTML
+          outputDirectory: './dependency-report'  # Où mettre le rapport
+
+      # Étape 4 : sauvegarder le rapport comme artifact
+      - name: Upload Dependency-Check report
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-report
+          path: dependency-report/dependency-check-report.html
